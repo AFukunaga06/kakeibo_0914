@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家計簿アプリ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .login-screen, .app-content {
+            text-align: center;
+        }
+
+        .login-screen h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .login-form {
+            margin-bottom: 20px;
+        }
+
+        .login-form input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 0 10px;
+            width: 200px;
+        }
+
+        .login-form button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-form button:hover {
+            background: #5a6fd8;
+        }
+
+        .app-header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-header h1 {
+            margin: 0;
+        }
+
+        .logout-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .expense-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .expense-form h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .add-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .add-btn:hover {
+            background: #218838;
+        }
+
+        .expense-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .expense-table th, .expense-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .expense-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .expense-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .delete-btn {
+            padding: 5px 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .total-amount {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ログイン画面 -->
+        <div id="login-screen" class="login-screen">
+            <h1>家計簿アプリ</h1>
+            <div class="login-form">
+                <input type="password" id="password" placeholder="パスワードを入力">
+                <button onclick="login()">ログイン</button>
+            </div>
+            <div id="error-message" class="error"></div>
+        </div>
+
+        <!-- メインアプリ画面 -->
+        <div id="app-content" class="app-content hidden">
+            <div class="app-header">
+                <h1>家計簿</h1>
+                <button class="logout-btn" onclick="logout()">ログアウト</button>
+            </div>
+
+            <!-- 編集用フォーム（編集可能モードのみ表示） -->
+            <div id="edit-form" class="expense-form hidden">
+                <h2>支出を追加</h2>
+                <div class="form-group">
+                    <label>日付:</label>
+                    <input type="date" id="date" required>
+                    
+                    <label>分類:</label>
+                    <select id="category" required>
+                        <option value="">選択してください</option>
+                        <option value="食費">食費</option>
+                        <option value="交通費">交通費</option>
+                        <option value="娯楽費">娯楽費</option>
+                        <option value="日用品">日用品</option>
+                        <option value="医療費">医療費</option>
+                        <option value="その他">その他</option>
+                    </select>
+                    
+                    <label>商品名:</label>
+                    <input type="text" id="product" required>
+                    
+                    <label>購入先:</label>
+                    <input type="text" id="store" required>
+                    
+                    <label>金額:</label>
+                    <input type="number" id="amount" min="0" required>
+                    
+                    <button class="add-btn" onclick="addExpense()">追加</button>
+                </div>
+            </div>
+
+            <!-- 支出一覧 -->
+            <div id="expense-list">
+                <h2>支出一覧</h2>
+                <table class="expense-table" id="expense-table">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>分類</th>
+                            <th>商品名</th>
+                            <th>購入先</th>
+                            <th>金額</th>
+                            <th id="action-header" class="hidden">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expense-tbody">
+                    </tbody>
+                </table>
+                <div class="total-amount" id="total-amount">合計: ¥0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+        const READONLY_PASSWORD = '0317';
+        const EDIT_PASSWORD = 'r246';
+
+        // APIからデータを読み込み
+        async function loadExpenses() {
+            try {
+                const response = await fetch('/api/expenses');
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data;
+                } else {
+                    console.error('データ取得エラー:', result.message);
+                    return [];
+                }
+            } catch (error) {
+                console.error('API接続エラー:', error);
+                return [];
+            }
+        }
+
+        // APIにデータを保存（この関数は今後使用しません）
+        function saveExpenses(expenses) {
+            // API版では個別にCRUD操作を行うため、この関数は使用しない
+            console.log('saveExpenses関数は廃止されました');
+        }
+
+        // ログイン処理
+        function login() {
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            if (password === READONLY_PASSWORD) {
+                isEditMode = false;
+                showApp();
+            } else if (password === EDIT_PASSWORD) {
+                isEditMode = true;
+                showApp();
+            } else {
+                errorMessage.textContent = 'パスワードが正しくありません';
+                return;
+            }
+
+            errorMessage.textContent = '';
+            document.getElementById('password').value = '';
+        }
+
+        // アプリ画面を表示
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+
+            if (isEditMode) {
+                document.getElementById('edit-form').classList.remove('hidden');
+                document.getElementById('action-header').classList.remove('hidden');
+            } else {
+                document.getElementById('edit-form').classList.add('hidden');
+                document.getElementById('action-header').classList.add('hidden');
+            }
+
+            // 今日の日付をデフォルトに設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+
+            displayExpenses();
+        }
+
+        // ログアウト処理
+        function logout() {
+            document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            isEditMode = false;
+        }
+
+        // 支出を追加
+        async function addExpense() {
+            const date = document.getElementById('date').value;
+            const category = document.getElementById('category').value;
+            const product = document.getElementById('product').value;
+            const store = document.getElementById('store').value;
+            const amount = document.getElementById('amount').value;
+
+            if (!date || !category || !product || !store || !amount) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/expenses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        date,
+                        category,
+                        product,
+                        store,
+                        amount: parseInt(amount)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // フォームをリセット
+                    document.getElementById('category').value = '';
+                    document.getElementById('product').value = '';
+                    document.getElementById('store').value = '';
+                    document.getElementById('amount').value = '';
+
+                    // 一覧を更新
+                    displayExpenses();
+                    
+                    // 成功メッセージ（任意）
+                    console.log(result.message);
+                } else {
+                    alert('エラー: ' + result.message);
+                }
+            } catch (error) {
+                console.error('支出追加エラー:', error);
+                alert('支出の追加に失敗しました');
+            }
+        }
+
+        // 支出を削除
+        async function deleteExpense(id) {
+            if (!confirm('この項目を削除しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/expenses/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 一覧を更新
+                    displayExpenses();
+                    console.log(result.message);
+                } else {
+                    alert('エラー: ' + result.message);
+                }
+            } catch (error) {
+                console.error('支出削除エラー:', error);
+                alert('支出の削除に失敗しました');
+            }
+        }
+
+        // 支出一覧を表示
+        async function displayExpenses() {
+            const expenses = await loadExpenses();
+            const tbody = document.getElementById('expense-tbody');
+            const totalElement = document.getElementById('total-amount');
+
+            tbody.innerHTML = '';
+            let total = 0;
+
+            // 日付順にソート（新しい順）- APIから既にソート済みだが念のため
+            expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            expenses.forEach(expense => {
+                total += expense.amount;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${expense.date}</td>
+                    <td>${expense.category}</td>
+                    <td>${expense.product}</td>
+                    <td>${expense.store}</td>
+                    <td>¥${expense.amount.toLocaleString()}</td>
+                    <td class="${isEditMode ? '' : 'hidden'}">
+                        <button class="delete-btn" onclick="deleteExpense(${expense.id})">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            totalElement.textContent = `合計: ¥${total.toLocaleString()}`;
+        }
+
+        // Enterキーでログイン
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // ページ読み込み時にフォーカスを設定
+        window.onload = function() {
+            document.getElementById('password').focus();
+        };
+    </script>
+</body>
+</html>
